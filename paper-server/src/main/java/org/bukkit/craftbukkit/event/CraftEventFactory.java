@@ -7,6 +7,7 @@ import com.google.common.collect.Lists;
 import com.mojang.authlib.GameProfile;
 import com.mojang.datafixers.util.Either;
 import io.papermc.paper.adventure.PaperAdventure;
+import io.papermc.paper.util.ChunkAttribution;
 import io.papermc.paper.connection.HorriblePlayerLoginEventHack;
 import io.papermc.paper.connection.PlayerConnection;
 import io.papermc.paper.event.connection.PlayerConnectionValidateLoginEvent;
@@ -262,9 +263,25 @@ import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.view.AnvilView;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.util.Vector;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class CraftEventFactory {
+
+    public static void callChunkLoadCauseEvent(@NotNull final ServerLevel level, @NotNull final CraftChunk chunk) {
+        final ChunkAttribution.Initiator initiator = ChunkAttribution.consume(level, chunk.getHandle().getPos());
+        org.bukkit.plugin.Plugin plugin = null;
+        org.bukkit.event.world.ChunkLoadType type = org.bukkit.event.world.ChunkLoadType.UNKNOWN;
+        if (initiator != null) {
+            plugin = initiator.plugin();
+            type = initiator.type();
+            if (type == org.bukkit.event.world.ChunkLoadType.UNKNOWN && plugin != null) {
+                type = org.bukkit.event.world.ChunkLoadType.PLUGIN_API;
+            }
+        }
+
+        Bukkit.getPluginManager().callEvent(new org.bukkit.event.world.ChunkLoadCauseEvent(chunk, plugin, type));
+    }
 
     // helper methods
     private static boolean canBuild(Level world, Player player, int x, int z) {
