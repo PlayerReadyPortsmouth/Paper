@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import io.papermc.paper.adventure.PaperAdventure;
+import io.papermc.paper.util.ChunkAttribution;
 import io.papermc.paper.connection.HorriblePlayerLoginEventHack;
 import io.papermc.paper.connection.PlayerConnection;
 import io.papermc.paper.event.connection.PlayerConnectionValidateLoginEvent;
@@ -70,6 +71,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.chunk.LevelChunk;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -118,6 +120,8 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Pig;
 import org.bukkit.entity.PigZombie;
 import org.bukkit.entity.Piglin;
+import org.bukkit.event.world.ChunkLoadCauseEvent;
+import org.bukkit.event.world.ChunkLoadType;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Raider;
@@ -1900,6 +1904,16 @@ public class CraftEventFactory {
         PiglinBarterEvent event = new PiglinBarterEvent((Piglin) piglin.getBukkitEntity(), CraftItemStack.asBukkitCopy(input), outcome.stream().map(CraftItemStack::asBukkitCopy).collect(Collectors.toList()));
         Bukkit.getPluginManager().callEvent(event);
         return event;
+    }
+
+    public static void callChunkLoadCauseEvent(ServerLevel level, CraftChunk chunk) {
+        ChunkAttribution.Cause cause = ChunkAttribution.consumeCause(level, chunk.getX(), chunk.getZ());
+        ChunkLoadType type = cause.type();
+        LevelChunk handle = chunk.getHandle();
+        if (type == ChunkLoadType.UNKNOWN && handle != null && handle.needsDecoration) {
+            type = ChunkLoadType.WORLD_GEN;
+        }
+        Bukkit.getPluginManager().callEvent(new ChunkLoadCauseEvent(chunk, cause.plugin(), type));
     }
 
     public static void callEntitiesLoadEvent(Level world, ChunkPos coords, List<Entity> entities) {
