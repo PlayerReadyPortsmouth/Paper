@@ -515,6 +515,8 @@ public class WorldConfiguration extends ConfigurationPart {
             map.put(EntityType.SMALL_FIREBALL, -1);
         });
         public boolean flushRegionsOnSave = false;
+        @Comment("Controls whether Paper will attempt to attribute chunk loads to plugins using stack walking.")
+        public boolean enableChunkLoadCauseStackWalk = true;
 
         @PostProcess
         private void postProcess() {

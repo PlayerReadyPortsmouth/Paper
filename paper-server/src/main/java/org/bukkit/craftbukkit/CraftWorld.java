@@ -6,6 +6,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
 import com.mojang.datafixers.util.Pair;
 import io.papermc.paper.FeatureHooks;
+import io.papermc.paper.util.ChunkAttribution;
 import io.papermc.paper.raytracing.RayTraceTarget;
 import io.papermc.paper.registry.RegistryAccess;
 import io.papermc.paper.registry.RegistryKey;
@@ -383,6 +384,7 @@ public class CraftWorld extends CraftRegionAccessor implements World {
 
     @Override
     public Chunk getChunkAt(int x, int z) {
+        ChunkAttribution.registerRequest(this.world, x, z, org.bukkit.event.world.ChunkLoadType.PLUGIN_API);
         warnUnsafeChunk("getting a faraway chunk", x, z); // Paper
         net.minecraft.world.level.chunk.LevelChunk chunk = (net.minecraft.world.level.chunk.LevelChunk) this.world.getChunk(x, z, ChunkStatus.FULL, true);
         return new CraftChunk(chunk);
@@ -539,6 +541,7 @@ public class CraftWorld extends CraftRegionAccessor implements World {
     @Override
     public boolean loadChunk(int x, int z, boolean generate) {
         org.spigotmc.AsyncCatcher.catchOp("chunk load"); // Spigot
+        ChunkAttribution.registerRequest(this.world, x, z, org.bukkit.event.world.ChunkLoadType.PLUGIN_API);
         warnUnsafeChunk("loading a faraway chunk", x, z); // Paper
         ChunkAccess chunk = this.world.getChunkSource().getChunk(x, z, generate || isChunkGenerated(x, z) ? ChunkStatus.FULL : ChunkStatus.EMPTY, true); // Paper
 
@@ -2017,6 +2020,7 @@ public class CraftWorld extends CraftRegionAccessor implements World {
     @Override
     public void getChunkAtAsync(int x, int z, boolean gen, boolean urgent, @NotNull Consumer<? super Chunk> cb) {
         warnUnsafeChunk("getting a faraway chunk async", x, z); // Paper
+        ChunkAttribution.registerRequest(this.getHandle(), x, z, org.bukkit.event.world.ChunkLoadType.PLUGIN_API);
         ca.spottedleaf.moonrise.common.PlatformHooks.get().scheduleChunkLoad(
             this.getHandle(), x, z, gen, ChunkStatus.FULL, true,
             urgent ? ca.spottedleaf.concurrentutil.util.Priority.HIGHER : ca.spottedleaf.concurrentutil.util.Priority.NORMAL,
@@ -2031,6 +2035,11 @@ public class CraftWorld extends CraftRegionAccessor implements World {
     public void getChunksAtAsync(int minX, int minZ, int maxX, int maxZ, boolean urgent, Runnable cb) {
         warnUnsafeChunk("getting a faraway chunk async", minX, minZ); // Paper
         warnUnsafeChunk("getting a faraway chunk async", maxX, maxZ); // Paper
+        for (int x = minX; x <= maxX; ++x) {
+            for (int z = minZ; z <= maxZ; ++z) {
+                ChunkAttribution.registerRequest(this.getHandle(), x, z, org.bukkit.event.world.ChunkLoadType.PLUGIN_API);
+            }
+        }
         this.getHandle().loadChunks(
             minX, minZ, maxX, maxZ,
             urgent ? ca.spottedleaf.concurrentutil.util.Priority.HIGHER : ca.spottedleaf.concurrentutil.util.Priority.NORMAL,
