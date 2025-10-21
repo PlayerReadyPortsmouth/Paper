@@ -199,6 +199,7 @@
 +             * no way of creating a CraftWorld/CraftServer at that point.
 +             */
 +            org.bukkit.Chunk bukkitChunk = new org.bukkit.craftbukkit.CraftChunk(this);
++            org.bukkit.craftbukkit.event.CraftEventFactory.callChunkLoadCauseEvent((net.minecraft.server.level.ServerLevel) this.level, (org.bukkit.craftbukkit.CraftChunk) bukkitChunk);
 +            server.getPluginManager().callEvent(new org.bukkit.event.world.ChunkLoadEvent(bukkitChunk, this.needsDecoration));
 +
 +            if (this.needsDecoration) {

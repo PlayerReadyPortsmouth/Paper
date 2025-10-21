@@ -73,6 +73,12 @@ public class GlobalConfiguration extends ConfigurationPart {
             "Set to 0 to let the server configure it automatically per player, or set it to -1 to disable the limit."
         )
         public int playerMaxConcurrentChunkGenerates = 0;
+
+        @Comment(
+            "When true, Paper will attempt to determine which plugin initiated synchronous chunk loads" +
+                " by walking the call stack. This introduces a small performance overhead."
+        )
+        public boolean detectPluginInitiatorForChunkLoads = false;
     }
     static void set(final GlobalConfiguration instance) {
         GlobalConfiguration.instance = instance;

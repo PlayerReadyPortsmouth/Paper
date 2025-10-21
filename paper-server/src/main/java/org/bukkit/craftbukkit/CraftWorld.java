@@ -6,6 +6,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicates;
 import com.mojang.datafixers.util.Pair;
 import io.papermc.paper.FeatureHooks;
+import io.papermc.paper.util.ChunkAttribution;
 import io.papermc.paper.raytracing.RayTraceTarget;
 import io.papermc.paper.registry.RegistryAccess;
 import io.papermc.paper.registry.RegistryKey;
@@ -78,6 +79,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import org.bukkit.BlockChangeDelegate;
 import org.bukkit.Bukkit;
+import org.bukkit.event.world.ChunkLoadType;
 import org.bukkit.Chunk;
 import org.bukkit.ChunkSnapshot;
 import org.bukkit.Difficulty;
@@ -378,6 +380,9 @@ public class CraftWorld extends CraftRegionAccessor implements World {
     @Override
     public Chunk getChunkAt(int x, int z) {
         warnUnsafeChunk("getting a faraway chunk", x, z); // Paper
+        if (!this.isChunkLoaded(x, z)) {
+            ChunkAttribution.recordChunkLoadCause(this.world, x, z, ChunkLoadType.PLUGIN_API);
+        }
         net.minecraft.world.level.chunk.LevelChunk chunk = (net.minecraft.world.level.chunk.LevelChunk) this.world.getChunk(x, z, ChunkStatus.FULL, true);
         return new CraftChunk(chunk);
     }
@@ -549,6 +554,9 @@ public class CraftWorld extends CraftRegionAccessor implements World {
     public boolean loadChunk(int x, int z, boolean generate) {
         org.spigotmc.AsyncCatcher.catchOp("chunk load"); // Spigot
         warnUnsafeChunk("loading a faraway chunk", x, z); // Paper
+        if (!this.isChunkLoaded(x, z)) {
+            ChunkAttribution.recordChunkLoadCause(this.world, x, z, ChunkLoadType.PLUGIN_API);
+        }
         ChunkAccess chunk = this.world.getChunkSource().getChunk(x, z, generate || isChunkGenerated(x, z) ? ChunkStatus.FULL : ChunkStatus.EMPTY, true); // Paper
 
         // If generate = false, but the chunk already exists, we will get this back.
@@ -2441,6 +2449,9 @@ public class CraftWorld extends CraftRegionAccessor implements World {
     @Override
     public void getChunkAtAsync(int x, int z, boolean gen, boolean urgent, @NotNull Consumer<? super Chunk> cb) {
         warnUnsafeChunk("getting a faraway chunk async", x, z); // Paper
+        if (!this.isChunkLoaded(x, z)) {
+            ChunkAttribution.recordChunkLoadCause(this.world, x, z, ChunkLoadType.PLUGIN_API);
+        }
         ca.spottedleaf.moonrise.common.PlatformHooks.get().scheduleChunkLoad(
             this.getHandle(), x, z, gen, ChunkStatus.FULL, true,
             urgent ? ca.spottedleaf.concurrentutil.util.Priority.HIGHER : ca.spottedleaf.concurrentutil.util.Priority.NORMAL,
@@ -2455,6 +2466,13 @@ public class CraftWorld extends CraftRegionAccessor implements World {
     public void getChunksAtAsync(int minX, int minZ, int maxX, int maxZ, boolean urgent, Runnable cb) {
         warnUnsafeChunk("getting a faraway chunk async", minX, minZ); // Paper
         warnUnsafeChunk("getting a faraway chunk async", maxX, maxZ); // Paper
+        for (int chunkX = minX; chunkX <= maxX; ++chunkX) {
+            for (int chunkZ = minZ; chunkZ <= maxZ; ++chunkZ) {
+                if (!this.isChunkLoaded(chunkX, chunkZ)) {
+                    ChunkAttribution.recordChunkLoadCause(this.world, chunkX, chunkZ, ChunkLoadType.PLUGIN_API);
+                }
+            }
+        }
         this.getHandle().loadChunks(
             minX, minZ, maxX, maxZ,
             urgent ? ca.spottedleaf.concurrentutil.util.Priority.HIGHER : ca.spottedleaf.concurrentutil.util.Priority.NORMAL,
